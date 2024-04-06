@@ -1,6 +1,7 @@
 package main
 
 import (
+	"apps/pkg/db"
 	"bytes"
 	"encoding/binary"
 	"fmt"
@@ -54,12 +55,18 @@ func main() {
 	svcs := []string{"b", "b"}
 	// wg := sync.WaitGroup{}
 
+	dynamodbTable, e := db.GetTableClient("movieTable")
+	if e != nil {
+		return
+	}
+
 	for i := 0; i <= 9; i++ {
 		reqBody := generateDummyData(1536) // 10240, 102400, 1048576
-		reqBody = append(reqBody, generateStateObj(512)...)
+		// reqBody = append(reqBody, generateStateObj(512)...)
 		buf := bytes.NewBuffer(reqBody)
 		// buf := strings.NewReader("d9175a23-65b0-4e78-9802-1d29d0a019d6")
 		// req, _ := http.NewRequest("POST", "http://127.0.0.1:10729/recover", buf)
+
 		req, _ := http.NewRequest("POST", fmt.Sprintf("http://127.0.0.1:10729/svc-%s/seq?n=3", svcs[i&1]), buf)
 		fmt.Printf("Req: http://127.0.0.1:10729/svc-%s/fib?n=3\n", svcs[i&1])
 		// req, _ := http.NewRequest("POST", "http://127.0.0.1:9903/failure_single", buf)
@@ -74,8 +81,8 @@ func main() {
 		//req.Header.Add("x-ftmesh-method-name", "curl-test")
 		//req.Header.Add("x-ftmesh-svc-port", "10801")
 		//req.Header.Add("x-ftmesh-svc-ip", "127.0.0.1")
-		req.Header.Add("x-ftmesh-mode", "0")
-		req.Header.Add("x-ftmesh-length", "1536")
+		// req.Header.Add("x-ftmesh-mode", "0")
+		// req.Header.Add("x-ftmesh-length", "1536")
 		// req.Header.Add("Keep-Alive", "timeout=5, max=100")
 
 		req.Header.Add("x-ftmesh-cluster", "cluster_0")
@@ -84,17 +91,23 @@ func main() {
 		// req.Header.Add("x-ftmesh-bench-marker", marker)
 
 		start := time.Now()
+		tbs, err := dynamodbTable.ListTables()
+		if err != nil {
+
+			panic(err)
+		}
 		client := &http.Client{}
 		fmt.Printf("Before do req ts: %v\n", time.Now().UnixMicro())
-		_, err := client.Do(req)
+		_, err = client.Do(req)
 		if err != nil {
 			panic(err)
 		}
 		duration := time.Since(start)
+		fmt.Println(tbs)
 		fmt.Println(duration.Microseconds())
 
 		// _, _ = readAllBody(resp.Body)
 
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(1000 * time.Millisecond)
 	}
 }

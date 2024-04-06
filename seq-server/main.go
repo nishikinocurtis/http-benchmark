@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/http/httputil"
 	"strconv"
 	"time"
 )
@@ -54,8 +55,18 @@ func calcSeq(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func dumpReq(w http.ResponseWriter, r *http.Request) {
+	buf, err := httputil.DumpRequest(r, true)
+	if err != nil {
+		return
+	}
+	fmt.Printf("%v\n", string(buf))
+	_, _ = w.Write([]byte("ok"))
+}
+
 func main() {
 	http.HandleFunc("/svc-b/seq", calcSeq)
+	http.HandleFunc("/", dumpReq)
 
 	_ = http.ListenAndServe(":20730", nil)
 }
