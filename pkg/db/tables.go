@@ -170,6 +170,6 @@ func GetTableClient(tableName string) (*TableBasics, error) {
 	})
 	return &TableBasics{
 		client,
-		"movieTable",
+		tableName,
 	}, nil
 }
